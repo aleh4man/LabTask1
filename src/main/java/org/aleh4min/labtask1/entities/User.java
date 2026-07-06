@@ -21,10 +21,12 @@ public class User {
 
     private String lastName;
 
-    private byte age;
+    private short age;
 
     private String email;
 
-    @OneToMany(mappedBy = "user")
-    private List<Address> address;
+    @OneToMany(mappedBy = "user",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY)
+    private List<Address> addresses;
 }

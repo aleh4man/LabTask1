@@ -10,7 +10,7 @@ public class UserRequestDto {
     private Long id;
     private String firstName;
     private String lastName;
-    private byte age;
+    private short age;
     private String email;
     private List<AddressRequestDto> addresses;
 }

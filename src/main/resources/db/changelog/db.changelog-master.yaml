@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - include:
+      file: versions/v1.0.0__create_users_table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: versions/v1.0.1__create_addresses_table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: versions/v1.0.2__create_index_on_users_name.yaml
+      relativeToChangelogFile: true

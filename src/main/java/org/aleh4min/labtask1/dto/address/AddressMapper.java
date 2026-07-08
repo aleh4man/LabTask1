@@ -6,10 +6,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface AddressMapper {
-    @Mapping(target = "id", ignore = true)
     AddressResponseDto toAddressResponseDto(Address addr);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", ignore = true)
     Address toAddress(AddressRequestDto addr);
 }

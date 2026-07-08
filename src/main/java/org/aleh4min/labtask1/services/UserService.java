@@ -2,6 +2,7 @@ package org.aleh4min.labtask1.services;
 
 import org.aleh4min.labtask1.dto.address.AddressRequestDto;
 import org.aleh4min.labtask1.dto.user.*;
+import org.aleh4min.labtask1.entities.Address;
 import org.aleh4min.labtask1.entities.User;
 import org.aleh4min.labtask1.repositories.UserRepository;
 
@@ -35,6 +36,12 @@ public class UserService {
         }
 
         User u = userMapper.toUser(userDto);
+
+        if (u.getAddresses() != null && !u.getAddresses().isEmpty()) {
+            for (Address address : u.getAddresses()) {
+                address.setUser(u);
+            }
+        }
         userRepository.save(u);
 
         return userMapper.toUserResponseDto(u);

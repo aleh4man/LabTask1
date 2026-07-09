@@ -1,6 +1,6 @@
 databaseChangeLog:
   - changeSet:
-      id: 3
+      id: 4
       author: aleh4min
       changes:
         - createIndex:
@@ -10,10 +10,3 @@ databaseChangeLog:
             columns:
               - column:
                   name: first_name
-        - createIndex:
-            tableName: users
-            indexName: idx_users_email
-            unique: true
-            columns:
-              - column:
-                  name: email

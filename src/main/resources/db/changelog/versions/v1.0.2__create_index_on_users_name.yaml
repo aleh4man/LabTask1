@@ -10,3 +10,10 @@ databaseChangeLog:
             columns:
               - column:
                   name: first_name
+        - createIndex:
+            tableName: users
+            indexName: idx_users_email
+            unique: true
+            columns:
+              - column:
+                  name: email

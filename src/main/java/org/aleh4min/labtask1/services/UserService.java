@@ -25,6 +25,8 @@ public class UserService {
         userMapper = um;
     }
 
+
+
     @Transactional
     public UserResponseDto createUser(UserCreateDto userDto) {
         RequestValidator.validateUser(userDto);
@@ -47,6 +49,8 @@ public class UserService {
         return userMapper.toUserResponseDto(u);
     }
 
+
+
     @Transactional
     public UserResponseDto getUserById(long id) {
         Optional<User> optUser = userRepository.findById(id);
@@ -57,11 +61,13 @@ public class UserService {
             throw new EntityNotFoundException("Пользователь с ID №" + id + " не найден");
     }
 
+
+
     public UserResponseDto updateUser(UserRequestDto userRequestDto) {
         Optional<User> userOpt = userRepository.findById(userRequestDto.getId());
 
         User user;
-        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь не найден");
+        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь с ID №" + id + " не найден");
         else user = userOpt.get();
 
         RequestValidator.validateUser(userRequestDto);
@@ -78,10 +84,12 @@ public class UserService {
         return userMapper.toUserResponseDto(user);
     }
 
+
+
     public void deleteUser(long id) {
         Optional<User> userOpt = userRepository.findById(id);
 
-        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь не найден");
+        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь с ID №" + id + " не найден");
 
         userRepository.deleteById(id);
     }

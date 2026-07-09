@@ -67,7 +67,7 @@ public class UserService {
         Optional<User> userOpt = userRepository.findById(userRequestDto.getId());
 
         User user;
-        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь с ID №" + id + " не найден");
+        if (userOpt.isEmpty()) throw new EntityNotFoundException("Пользователь с ID не найден");
         else user = userOpt.get();
 
         RequestValidator.validateUser(userRequestDto);

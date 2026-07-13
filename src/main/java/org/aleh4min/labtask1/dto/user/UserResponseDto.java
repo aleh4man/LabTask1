@@ -5,12 +5,11 @@ import org.aleh4min.labtask1.dto.address.AddressResponseDto;
 
 import java.util.List;
 
-@Data
-public class UserResponseDto {
-    private Long id;
-    private String firstName;
-    private String lastName;
-    private short age;
-    private String email;
-    private List<AddressResponseDto> addresses;
-}
+public record UserResponseDto(
+        Long id,
+        String firstName,
+        String lastName,
+        short age,
+        String email,
+        List<AddressResponseDto> addresses
+) {}

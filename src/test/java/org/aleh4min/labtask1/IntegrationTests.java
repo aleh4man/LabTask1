@@ -5,25 +5,29 @@ import org.aleh4min.labtask1.dto.user.UserCreateDto;
 import org.aleh4min.labtask1.dto.user.UserRequestDto;
 import org.aleh4min.labtask1.dto.user.UserResponseDto;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
 @Testcontainers
 public class IntegrationTests {
 
@@ -34,7 +38,10 @@ public class IntegrationTests {
             .withPassword("test");
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @DynamicPropertySource
     static void registerPgProperties(DynamicPropertyRegistry registry) {
@@ -46,86 +53,44 @@ public class IntegrationTests {
 
     private UserCreateDto userDto;
     @BeforeEach
-    public void createUser() {
-        userDto = new UserCreateDto();
-        userDto.setFirstName("Петр");
-        userDto.setLastName("Сидоров");
-        userDto.setAge((short) 25);
-        userDto.setEmail("petr@mail.ru");
+    public void setUp() {
+        userDto = new UserCreateDto(
+                "Петр",
+                "Сидоров",
+                (short) 25,
+                "petr@mail.ru",
+                null
+        );
     }
 
-
-
-
-
     @Test
-    public void createUser_withoutAddresses_shouldReturn201() {
+    public void createUser_withoutAddresses_shouldReturn201() throws Exception {
         String firstName = "Петр";
         String lastName = "Сидоров";
         short age = 25;
         String email = "petr@mail.ru";
 
+        String json = objectMapper.writeValueAsString(userDto);
 
+        MvcResult result = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        ResponseEntity<UserResponseDto> response = restTemplate.postForEntity(
-                "/api/users", userDto, UserResponseDto.class
-        );
+        String responseJson = result.getResponse().getContentAsString();
+        UserResponseDto response = objectMapper.readValue(responseJson, UserResponseDto.class);
 
-
-
-        Assertions.assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        Assertions.assertNotNull(response.getBody());
-        Assertions.assertNotNull(response.getBody().getId());
-        Assertions.assertEquals(firstName, response.getBody().getFirstName());
-        Assertions.assertEquals(lastName, response.getBody().getLastName());
-        Assertions.assertEquals(age, response.getBody().getAge());
-        Assertions.assertEquals(email, response.getBody().getEmail());
-        Assertions.assertNull(response.getBody().getAddresses());
+        assertThat(response.id()).isNotNull();
+        assertThat(response.firstName()).isEqualTo(firstName);
+        assertThat(response.lastName()).isEqualTo(lastName);
+        assertThat(response.age()).isEqualTo(age);
+        assertThat(response.email()).isEqualTo(email);
+        assertThat(response.addresses()).isNull();
     }
 
-
-
-
-
     @Test
-    public void createUser_withAddress_shouldReturn201() {
-        String firstName = "Петр";
-        String lastName = "Сидоров";
-        short age = 25;
-        String email = "petr@mail.ru";
-
-        String street = "Пушкина";
-        int houseNumber = 2;
-        int doorNumber = 67;
-
-        AddressRequestDto addressDto = new AddressRequestDto();
-        addressDto.setStreet(street);
-        addressDto.setHouseNumber(houseNumber);
-        addressDto.setDoorNumber(doorNumber);
-        userDto.setAddresses(List.of(addressDto));
-
-
-
-        ResponseEntity<UserResponseDto> response = restTemplate.postForEntity(
-                "/api/users", userDto, UserResponseDto.class
-        );
-
-
-
-        Assertions.assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        Assertions.assertNotNull(response.getBody().getAddresses());
-        Assertions.assertNotNull(response.getBody().getAddresses().getFirst().getId());
-        Assertions.assertEquals(street, response.getBody().getAddresses().getFirst().getStreet());
-        Assertions.assertEquals(houseNumber, response.getBody().getAddresses().getFirst().getHouseNumber());
-        Assertions.assertEquals(doorNumber, response.getBody().getAddresses().getFirst().getDoorNumber());
-    }
-
-
-
-
-
-    @Test
-    public void getUserById_existingUser_shouldReturn200() {
+    public void createUser_withAddress_shouldReturn201() throws Exception {
         String firstName = "Петр";
         String lastName = "Сидоров";
         short age = 25;
@@ -135,121 +100,156 @@ public class IntegrationTests {
         int houseNumber = 2;
         int doorNumber = 67;
 
-        AddressRequestDto addressDto = new AddressRequestDto();
-        addressDto.setStreet(street);
-        addressDto.setHouseNumber(houseNumber);
-        addressDto.setDoorNumber(doorNumber);
-
-        userDto.setAddresses(List.of(addressDto));
-
-
-
-        ResponseEntity<UserResponseDto> response = restTemplate.postForEntity(
-                "/api/users", userDto, UserResponseDto.class
-        );
-        long id = response.getBody().getId();
-        response = restTemplate.getForEntity(
-                "/api/users/" + id, UserResponseDto.class
+        AddressRequestDto addressDto = new AddressRequestDto(
+                street,
+                houseNumber,
+                doorNumber
         );
 
+        UserCreateDto userWithAddress = new UserCreateDto(
+                firstName,
+                lastName,
+                age,
+                email,
+                List.of(addressDto)
+        );
 
+        String json = objectMapper.writeValueAsString(userWithAddress);
 
-        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-        Assertions.assertNotNull(response.getBody());
-        Assertions.assertEquals(id, response.getBody().getId());
-        Assertions.assertEquals(firstName, response.getBody().getFirstName());
-        Assertions.assertEquals(lastName, response.getBody().getLastName());
-        Assertions.assertEquals(age, response.getBody().getAge());
-        Assertions.assertEquals(email,  response.getBody().getEmail());
-        Assertions.assertNotNull(response.getBody().getAddresses());
+        MvcResult result = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String responseJson = result.getResponse().getContentAsString();
+        UserResponseDto response = objectMapper.readValue(responseJson, UserResponseDto.class);
+
+        assertThat(response.addresses()).isNotNull();
+        assertThat(response.addresses().getFirst().street()).isEqualTo(street);
+        assertThat(response.addresses().getFirst().houseNumber()).isEqualTo(houseNumber);
+        assertThat(response.addresses().getFirst().doorNumber()).isEqualTo(doorNumber);
     }
 
     @Test
-    public void updateUser_ageChanging_shouldReturn200() {
+    public void getUserById_existingUser_shouldReturn200() throws Exception {
+        String firstName = "Петр";
+        String lastName = "Сидоров";
+        short age = 25;
+        String email = "petr@mail.ru";
+
+        String createJson = objectMapper.writeValueAsString(userDto);
+        MvcResult createResult = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createJson))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        UserResponseDto createdUser = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                UserResponseDto.class
+        );
+        Long userId = createdUser.id();
+
+        MvcResult getResult = mockMvc.perform(get("/api/users/{userId}", userId))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        UserResponseDto response = objectMapper.readValue(
+                getResult.getResponse().getContentAsString(),
+                UserResponseDto.class
+        );
+
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.firstName()).isEqualTo(firstName);
+        assertThat(response.lastName()).isEqualTo(lastName);
+        assertThat(response.age()).isEqualTo(age);
+        assertThat(response.email()).isEqualTo(email);
+    }
+
+    @Test
+    public void updateUser_allFieldsChanging_shouldReturn200() throws Exception {
         String firstName = "Петр";
         String lastName = "Сидоров";
         short age = 27;
         String email = "petr@mail.ru";
 
+        String newFirstName = "Алексей";
+        String newLastName = "Иванов";
+        short newAge = 30;
+        String newEmail = "alexey@mail.ru";
 
+        String createJson = objectMapper.writeValueAsString(userDto);
+        MvcResult createResult = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        ResponseEntity<UserResponseDto> response = restTemplate.postForEntity(
-                "/api/users", userDto, UserResponseDto.class
+        UserResponseDto createdUser = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
+                UserResponseDto.class
+        );
+        Long userId = createdUser.id();
+
+        UserRequestDto updateDto = new UserRequestDto(
+                newFirstName,
+                newLastName,
+                newAge,
+                newEmail,
+                null
         );
 
-        long id = response.getBody().getId();
+        String updateJson = objectMapper.writeValueAsString(updateDto);
 
-        UserRequestDto userRequestDto = new UserRequestDto();
-        userRequestDto.setId(id);
-        userRequestDto.setFirstName(response.getBody().getFirstName());
-        userRequestDto.setLastName(response.getBody().getLastName());
-        userRequestDto.setAge(age);
-        userRequestDto.setEmail(response.getBody().getEmail());
+        MvcResult updateResult = mockMvc.perform(patch("/api/users/{userId}", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateJson))
+                .andExpect(status().isOk())
+                .andReturn();
 
-        HttpEntity<UserRequestDto> request = new HttpEntity<>(userRequestDto);
-        response = restTemplate.exchange(
-                "/api/users/" + id,
-                HttpMethod.PATCH,
-                request,
+        UserResponseDto updatedUser = objectMapper.readValue(
+                updateResult.getResponse().getContentAsString(),
                 UserResponseDto.class
         );
 
-
-
-        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-        Assertions.assertNotNull(response);
-        Assertions.assertEquals(id, response.getBody().getId());
-        Assertions.assertEquals(firstName, response.getBody().getFirstName());
-        Assertions.assertEquals(lastName, response.getBody().getLastName());
-        Assertions.assertEquals(age, response.getBody().getAge());
-        Assertions.assertEquals(email, response.getBody().getEmail());
+        assertThat(updatedUser.id()).isEqualTo(userId);
+        assertThat(updatedUser.firstName()).isEqualTo(newFirstName);
+        assertThat(updatedUser.lastName()).isEqualTo(newLastName);
+        assertThat(updatedUser.age()).isEqualTo(newAge);
+        assertThat(updatedUser.email()).isEqualTo(newEmail);
     }
 
-
-
-
-
     @Test
-    public void deleteUser_shouldReturn204() {
+    public void deleteUser_shouldReturn204() throws Exception {
         String firstName = "Петр";
         String lastName = "Сидоров";
         short age = 25;
         String email = "petr@mail.ru";
 
+        String createJson = objectMapper.writeValueAsString(userDto);
+        MvcResult createResult = mockMvc.perform(post("/api/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createJson))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-
-        ResponseEntity<UserResponseDto> response = restTemplate.postForEntity(
-                "/api/users", userDto, UserResponseDto.class
-        );
-        long id = response.getBody().getId();
-
-        response = restTemplate.exchange(
-                "/api/users/" + id,
-                HttpMethod.DELETE,
-                null,
+        UserResponseDto createdUser = objectMapper.readValue(
+                createResult.getResponse().getContentAsString(),
                 UserResponseDto.class
         );
+        Long userId = createdUser.id();
 
-        Assertions.assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        mockMvc.perform(delete("/api/users/{userId}", userId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/{userId}", userId))
+                .andExpect(status().isNotFound());
     }
 
-
-
-
-
     @Test
-    public void getUserById_nonExistentUser_shouldReturn404() {
-        Long nonExistentId = 9999L;
-
-
-
-        ResponseEntity<String> response = restTemplate.getForEntity(
-                "/api/users/" + nonExistentId,
-                String.class
-        );
-
-
-
-        Assertions.assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    public void getUserById_nonExistentUser_shouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/users/9999"))
+                .andExpect(status().isNotFound());
     }
 }

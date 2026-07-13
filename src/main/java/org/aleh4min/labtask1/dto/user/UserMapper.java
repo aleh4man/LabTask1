@@ -12,11 +12,12 @@ uses = {AddressMapper.class})
 public interface UserMapper {
     UserResponseDto toUserResponseDto(User user);
 
+    @Mapping(target = "id", ignore = true)
     User toUser(UserRequestDto user);
 
+    @Mapping(target = "id", ignore = true)
     User toUser(UserCreateDto user);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "addresses", ignore = true)
     void updateUserFromDto(UserRequestDto dto, @MappingTarget User user);
 }

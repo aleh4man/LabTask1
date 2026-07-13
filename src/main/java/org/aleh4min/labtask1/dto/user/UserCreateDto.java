@@ -1,5 +1,6 @@
 package org.aleh4min.labtask1.dto.user;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,5 +24,6 @@ public record UserCreateDto(
         @Email(message = "Invalid email format")
         String email,
 
+        @Valid
         List<AddressRequestDto> addresses
 ) {}

@@ -18,7 +18,6 @@ public class UserService {
 
     @Transactional
     public UserResponseDto createUser(UserCreateDto userDto) {
-
         User user = userMapper.toUser(userDto);
 
         if (user.getAddresses() != null && !user.getAddresses().isEmpty()) {
@@ -48,6 +47,12 @@ public class UserService {
                 ));
 
         userMapper.updateUserFromDto(userRequestDto, user);
+
+        if (user.getAddresses() != null && !user.getAddresses().isEmpty()) {
+            for (Address address : user.getAddresses()) {
+                address.setUser(user);
+            }
+        }
         userRepository.save(user);
 
         return userMapper.toUserResponseDto(user);

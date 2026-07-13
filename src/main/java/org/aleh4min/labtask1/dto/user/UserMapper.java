@@ -5,6 +5,7 @@ import org.aleh4min.labtask1.entities.User;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring",
 uses = {AddressMapper.class})
@@ -13,6 +14,9 @@ public interface UserMapper {
 
     User toUser(UserRequestDto user);
 
-    @Mapping(source = "user.addresses", target = "addresses")
     User toUser(UserCreateDto user);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "addresses", ignore = true)
+    void updateUserFromDto(UserRequestDto dto, @MappingTarget User user);
 }

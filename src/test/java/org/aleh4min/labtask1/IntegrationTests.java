@@ -1,6 +1,7 @@
 package org.aleh4min.labtask1;
 
 import org.aleh4min.labtask1.dto.address.AddressRequestDto;
+import org.aleh4min.labtask1.dto.address.AddressResponseDto;
 import org.aleh4min.labtask1.dto.user.UserCreateDto;
 import org.aleh4min.labtask1.dto.user.UserRequestDto;
 import org.aleh4min.labtask1.dto.user.UserResponseDto;
@@ -81,12 +82,13 @@ public class IntegrationTests {
         String responseJson = result.getResponse().getContentAsString();
         UserResponseDto response = objectMapper.readValue(responseJson, UserResponseDto.class);
 
-        assertThat(response.id()).isNotNull();
-        assertThat(response.firstName()).isEqualTo(firstName);
-        assertThat(response.lastName()).isEqualTo(lastName);
-        assertThat(response.age()).isEqualTo(age);
-        assertThat(response.email()).isEqualTo(email);
-        assertThat(response.addresses()).isNull();
+        UserResponseDto expected = new UserResponseDto(
+                null, firstName, lastName, age, email, null
+        );
+
+        assertThat(response).usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -125,10 +127,14 @@ public class IntegrationTests {
         String responseJson = result.getResponse().getContentAsString();
         UserResponseDto response = objectMapper.readValue(responseJson, UserResponseDto.class);
 
-        assertThat(response.addresses()).isNotNull();
-        assertThat(response.addresses().getFirst().street()).isEqualTo(street);
-        assertThat(response.addresses().getFirst().houseNumber()).isEqualTo(houseNumber);
-        assertThat(response.addresses().getFirst().doorNumber()).isEqualTo(doorNumber);
+        List<AddressResponseDto> expectedAddress = List.of(
+                new AddressResponseDto(null, street, houseNumber, doorNumber)
+        );
+
+        assertThat(response.addresses())
+                .usingRecursiveComparison()
+                .ignoringFields("id")
+                .isEqualTo(expectedAddress);
     }
 
     @Test
@@ -160,11 +166,13 @@ public class IntegrationTests {
                 UserResponseDto.class
         );
 
-        assertThat(response.id()).isEqualTo(userId);
-        assertThat(response.firstName()).isEqualTo(firstName);
-        assertThat(response.lastName()).isEqualTo(lastName);
-        assertThat(response.age()).isEqualTo(age);
-        assertThat(response.email()).isEqualTo(email);
+        UserResponseDto expected = new UserResponseDto(
+                userId, firstName, lastName, age, email, List.of()
+        );
+
+        assertThat(response).usingRecursiveComparison()
+                //.ignoringFields("addresses")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -213,11 +221,13 @@ public class IntegrationTests {
                 UserResponseDto.class
         );
 
-        assertThat(updatedUser.id()).isEqualTo(userId);
-        assertThat(updatedUser.firstName()).isEqualTo(newFirstName);
-        assertThat(updatedUser.lastName()).isEqualTo(newLastName);
-        assertThat(updatedUser.age()).isEqualTo(newAge);
-        assertThat(updatedUser.email()).isEqualTo(newEmail);
+        UserResponseDto expected = new UserResponseDto(
+                userId, newFirstName, newLastName, newAge, newEmail, null
+        );
+
+        assertThat(updatedUser)
+                .usingRecursiveComparison()
+                .isEqualTo(expected);
     }
 
     @Test

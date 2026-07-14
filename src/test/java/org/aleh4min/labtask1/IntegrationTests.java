@@ -171,7 +171,6 @@ public class IntegrationTests {
         );
 
         assertThat(response).usingRecursiveComparison()
-                //.ignoringFields("addresses")
                 .isEqualTo(expected);
     }
 
